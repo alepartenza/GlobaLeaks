@@ -82,9 +82,9 @@ class Model(object):
     list_keys = []
 
     def __init__(self, values=None, migrate=False):
-        self.update(values)
-
         self.properties =  [c.key for c in self.__table__.columns]
+
+        self.update(values)
 
     def update(self, values=None):
         """
@@ -99,20 +99,20 @@ class Model(object):
         if 'tid' in values and values['tid'] != '':
             setattr(self, 'tid', values['tid'])
 
-        for k in getattr(self, 'unicode_keys'):
-            if k in values and values[k] is not None:
+        for k in self.properties:
+            if k not in values or values[k] is None:
+                continue
+
+            elif k in self.unicode_keys:
                 setattr(self, k, unicode(values[k]))
 
-        for k in getattr(self, 'int_keys'):
-            if k in values and values[k] is not None:
+            elif k in self.int_keys:
                 setattr(self, k, int(values[k]))
 
-        for k in getattr(self, 'datetime_keys'):
-            if k in values and values[k] is not None:
+            elif k in self.datetime_keys:
                 setattr(self, k, values[k])
 
-        for k in getattr(self, 'bool_keys'):
-            if k in values and values[k] is not None:
+            elif k in self.bool_keys:
                 if values[k] == u'true':
                     value = True
                 elif values[k] == u'false':
@@ -121,8 +121,7 @@ class Model(object):
                     value = bool(values[k])
                 setattr(self, k, value)
 
-        for k in getattr(self, 'localized_keys'):
-            if k in values and values[k] is not None:
+            elif k in self.localized_keys:
                 value = values[k]
                 previous = copy.deepcopy(getattr(self, k))
 
@@ -132,13 +131,10 @@ class Model(object):
 
                 setattr(self, k, value)
 
-        for k in getattr(self, 'json_keys'):
-            if k in values and values[k] is not None:
-                setattr(self, k, values[k])
+        for k in self.optional_references:
+           if k in values and values[k]:
+               setattr(self, k, values[k])
 
-        for k in getattr(self, 'optional_references'):
-            if k in values and values[k]:
-                setattr(self, k, values[k])
 
     def __str__(self):
         # pylint: disable=no-member
